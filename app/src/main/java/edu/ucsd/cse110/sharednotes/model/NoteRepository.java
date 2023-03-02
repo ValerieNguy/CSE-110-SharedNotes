@@ -83,6 +83,8 @@ public class NoteRepository {
         // TODO: Set up polling background thread (MutableLiveData?)
         // TODO: Refer to TimerService from https://github.com/DylanLukes/CSE-110-WI23-Demo5-V2.
 
+
+
         // Start by fetching the note from the server ONCE.
         // Then, set up a background thread that will poll the server every 3 seconds.
         // You may (but don't have to) want to cache the LiveData's for each title, so that
