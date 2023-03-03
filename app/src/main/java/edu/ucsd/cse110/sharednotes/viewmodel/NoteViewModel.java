@@ -6,6 +6,8 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
+import java.io.IOException;
+
 import edu.ucsd.cse110.sharednotes.model.Note;
 import edu.ucsd.cse110.sharednotes.model.NoteDatabase;
 import edu.ucsd.cse110.sharednotes.model.NoteRepository;
@@ -30,11 +32,13 @@ public class NoteViewModel extends AndroidViewModel {
         if (note == null) {
             note = repo.getLocal(title);
         }
+        note = repo.getSynced(title);
         return note;
     }
 
-    public void save(Note note) {
+    public void save(Note note) throws IOException {
         // TODO: try to upload the note to the server.
         repo.upsertLocal(note);
+        repo.upsertRemote(note);
     }
 }

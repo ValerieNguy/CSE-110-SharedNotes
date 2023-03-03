@@ -12,6 +12,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.ViewModelProvider;
 
+import java.io.IOException;
+
 import edu.ucsd.cse110.sharednotes.R;
 import edu.ucsd.cse110.sharednotes.model.Note;
 import edu.ucsd.cse110.sharednotes.model.NoteDao;
@@ -75,7 +77,11 @@ public class NoteActivity extends AppCompatActivity {
 
             updatedNote.content = updatedContent;
 
-            viewModel.save(updatedNote);
+            try {
+                viewModel.save(updatedNote);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 

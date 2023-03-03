@@ -2,13 +2,22 @@ package edu.ucsd.cse110.sharednotes.model;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MediatorLiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Observer;
 
+import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import edu.ucsd.cse110.sharednotes.viewmodel.NoteViewModel;
 
 public class NoteRepository {
     private final NoteDao dao;
+    private ScheduledFuture<?> poller;
 
     public NoteRepository(NoteDao dao) {
         this.dao = dao;
@@ -34,7 +43,7 @@ public class NoteRepository {
         Observer<Note> updateFromRemote = theirNote -> {
             var ourNote = note.getValue();
             if (theirNote == null) return; // do nothing
-            if (ourNote == null || ourNote.updatedAt < theirNote.updatedAt) {
+            if (ourNote == null || ourNote.version < theirNote.version) {
                 upsertLocal(theirNote);
             }
         };
@@ -47,7 +56,7 @@ public class NoteRepository {
         return note;
     }
 
-    public void upsertSynced(Note note) {
+    public void upsertSynced(Note note) throws IOException {
         upsertLocal(note);
         upsertRemote(note);
     }
@@ -64,7 +73,7 @@ public class NoteRepository {
     }
 
     public void upsertLocal(Note note) {
-        note.updatedAt = System.currentTimeMillis();
+        note.version = note.version + 1;
         dao.upsert(note);
     }
 
@@ -79,29 +88,60 @@ public class NoteRepository {
     // Remote Methods
     // ==============
 
+
+    NoteAPI api = new NoteAPI();
     public LiveData<Note> getRemote(String title) {
         // TODO: Implement getRemote!
         // TODO: Set up polling background thread (MutableLiveData?)
         // TODO: Refer to TimerService from https://github.com/DylanLukes/CSE-110-WI23-Demo5-V2.
 
-<<<<<<< HEAD
+        if(this.poller != null && !this.poller.isCancelled()) {
+            poller.cancel(true);
+        }
 
 
-        // Start by fetching the note from the server ONCE.
-=======
+        MutableLiveData<Note> noteLiveData = new MutableLiveData<>();
+        noteLiveData.postValue(api.getNote(title));
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+        this.poller = executor.scheduleAtFixedRate(() -> {
+            noteLiveData.postValue(api.getNote(title));
+        }, 0, 3000, TimeUnit.MILLISECONDS);
+
+        return noteLiveData;
         // Start by fetching the note from the server _once_ and feeding it into MutableLiveData.
->>>>>>> 3314a9a290ba6d1fae58f0f0c6c0877b426509c1
+
+
         // Then, set up a background thread that will poll the server every 3 seconds.
 
         // You may (but don't have to) want to cache the LiveData's for each title, so that
         // you don't create a new polling thread every time you call getRemote with the same title.
         // You don't need to worry about killing background threads.
 
-        throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public void upsertRemote(Note note) {
-        // TODO: Implement upsertRemote!
-        throw new UnsupportedOperationException("Not implemented yet");
+
+    public void upsertRemote(Note note) throws IOException {
+        //api.putNote(note);
+
+
+        if(this.poller != null && !this.poller.isCancelled()) {
+            poller.cancel(true);
+        }
+
+
+        MutableLiveData<Note> noteLiveData = new MutableLiveData<>();
+        //noteLiveData.postValue(api.putNote(note));
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+        this.poller = executor.scheduleAtFixedRate(() -> {
+            try {
+                noteLiveData.postValue(api.putNote(note));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, 0, 3000, TimeUnit.MILLISECONDS);
+
+
     }
 }
